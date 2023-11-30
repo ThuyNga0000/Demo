@@ -1,0 +1,60 @@
+ # This creates the stages in which the jobs will run. By default, all
+ # jobs will run in parallel in the stage. Once the jobs are completed
+ # successfully, you move on to the next stage. The way jobs run
+ # is completely configurable.
+ stages:
+   - test
+
+ # With the include statement, you can quickly add jobs that have
+ # been pre-defined in external YAML files. The SAST job I've included below
+ # is provided and maintained by GitLab and adds Static Application
+ # Security Testing (SAST) to your pipeline.
+ include:
+   - template: Jobs/SAST.gitlab-ci.yml
+
+ # This is the unit test job that does exactly what is defined in
+ # the GitHub Action in unit.yml. You can see it uses the python:3.10
+ # Docker image, installs the application dependencies, and then runs
+ # the unit tests with pytest. It was added with a simple copy and
+ # paste and minor syntax changes.
+ unit:
+   image: python:3.10
+   stage: test
+   before_script:
+     - python -m pip install --upgrade pip
+     - pip install pytest
+     - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+   script:
+     - pytest tests/
+
+ # This is the lint job that does exactly what is defined in the
+ # GitHub Action in lint.yml. You can see it uses the python:3.10
+ # Docker image, installs the application dependencies, and then
+ # performs the linting with flake8. It was added with a simple copy
+ # and paste and minor syntax changes.
+ lint:
+   image: python:3.10
+   stage: test
+   before_script:
+     - python -m pip install --upgrade pip
+     - pip install flake8
+     - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+   script:
+     - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+     - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+ # This is the smoke test job that does exactly what is defined in
+ # the GitHub Action in smoke.yml. You can see it uses the python:3.10
+ # Docker image, installs the application dependencies, and then runs
+ # the smoke tests with the Reddit sentiment analysis CLI. It was
+ # added with a simple copy and paste and minor syntax changes.
+ smoke:
+   image: python:3.10
+   stage: test
+   before_script:
+     - python -m pip install --upgrade pip
+     - pip install setuptools
+     - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+     - python setup.py install
+   script:
+     - reddit-sentiment --help
